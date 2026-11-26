@@ -1,73 +1,66 @@
-// The Best Advice I Ever Got
-// Writes one sentence of received advice to /output/entry.txt.
-// The sentence is assembled from the moment, the advice itself,
-// and the echo it still carries, then checked against the gate:
-// UTF-8 text, 1 to 200 characters, not only white space,
+// Kartu AS entry for The Best Advice I Ever Got.
+// Emits a single received-advice sentence to /output/entry.txt.
+// The sentence is built from three fragments: the packing scene,
+// the permission my mother gave me, and the thirty years behind it.
+// Before anything is written, the text must satisfy the gate:
+// UTF-8, between 1 and 200 characters, visible content,
 // exactly one sentence.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const OUTPUT_DIR = "/output";
-const OUTPUT_PATH = "/output/entry.txt";
-const MIN_CHARACTERS = 1;
-const MAX_CHARACTERS = 200;
+const TARGET_DIR = "/output";
+const TARGET_FILE = "/output/entry.txt";
+const LOWEST = 1;
+const HIGHEST = 200;
 
-const MOMENT =
-  "At my grandfather's funeral, my grandmother squeezed my hand and said";
-const ADVICE = "call people while they can still answer";
-const ECHO = "a sentence I hear every time I almost wait too long";
+const SCENE = "As she helped me pack to leave, my mother said";
+const PERMISSION = "you do not have to suffer enough to earn leaving";
+const WEIGHT = "and she had stayed thirty years to know";
 
-function composeSentence(): string {
-  return `${MOMENT} ${ADVICE}, ${ECHO}.`;
+function buildSentence(): string {
+  return SCENE + " " + PERMISSION + ", " + WEIGHT + ".";
 }
 
-function countCharacters(text: string): number {
-  return [...text].length;
+function countCodePoints(text: string): number {
+  let total = 0;
+  for (const _symbol of text) {
+    total += 1;
+  }
+  return total;
 }
 
-function countSentenceEndings(text: string): number {
-  let endings = 0;
-  for (const character of text) {
-    if (character === "." || character === "!" || character === "?") {
-      endings += 1;
+function terminalMarks(text: string): number {
+  const marks = [".", "!", "?"];
+  let found = 0;
+  for (const symbol of text) {
+    if (marks.includes(symbol)) {
+      found += 1;
     }
   }
-  return endings;
+  return found;
 }
 
-function isSingleSentence(text: string): boolean {
-  return countSentenceEndings(text) === 1 && text.endsWith(".");
-}
-
-function hasVisibleText(text: string): boolean {
-  return text.trim().length > 0;
-}
-
-function passesGate(text: string): boolean {
-  const characters = countCharacters(text);
-  if (characters < MIN_CHARACTERS || characters > MAX_CHARACTERS) {
+function acceptable(text: string): boolean {
+  const size = countCodePoints(text);
+  if (size < LOWEST || size > HIGHEST) {
     return false;
   }
-  if (!hasVisibleText(text)) {
+  if (text.trim() === "") {
     return false;
   }
   if (text.includes("\n") || text.includes("\r")) {
     return false;
   }
-  return isSingleSentence(text);
+  return terminalMarks(text) === 1 && text.endsWith(".");
 }
 
-function writeEntry(text: string): void {
-  mkdirSync(OUTPUT_DIR, { recursive: true });
-  writeFileSync(OUTPUT_PATH, text, "utf8");
+function emit(text: string): void {
+  mkdirSync(TARGET_DIR, { recursive: true });
+  writeFileSync(TARGET_FILE, text, "utf8");
 }
 
-function main(): void {
-  const sentence = composeSentence();
-  if (!passesGate(sentence)) {
-    throw new Error("sentence does not fit the gate");
-  }
-  writeEntry(sentence);
+const sentence = buildSentence();
+if (!acceptable(sentence)) {
+  throw new Error("sentence rejected by the gate");
 }
-
-main();
+emit(sentence);
